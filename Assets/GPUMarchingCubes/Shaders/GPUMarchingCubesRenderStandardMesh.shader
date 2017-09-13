@@ -2,9 +2,7 @@
 {
 	Properties
 	{
-		_Width("Width", int) = 32
-		_Height("Height", int) = 32
-		_Depth("Depth", int) = 32
+		_SegmentNum("SegmentNum", int) = 32
 
 		_Scale("Scale", float) = 1
 		_Threashold("Threashold", float) = 0.5
@@ -62,9 +60,7 @@
 			float4 hpos			: TEXCOORD1;
 		};
 
-		int _Width;
-		int _Height;
-		int _Depth;
+		int _SegmentNum;
 
 		float _Scale;
 		float _Threashold;
@@ -82,10 +78,10 @@
 		// サンプリング関数
 		float Sample(float x, float y, float z) {
 
-			if ((x <= 1) || (y <= 1) || (z <= 1) || (x >= (_Width - 1)) || (y >= (_Height - 1)) || (z >= (_Depth - 1)))
+			if ((x <= 1) || (y <= 1) || (z <= 1) || (x >= (_SegmentNum - 1)) || (y >= (_SegmentNum - 1)) || (z >= (_SegmentNum - 1)))
 				return 0;
 
-			float3 size = float3(_Width, _Height, _Depth);
+			float3 size = float3(_SegmentNum, _SegmentNum, _SegmentNum);
 
 			float3 pos = float3(x, y, z) / size;
 			
