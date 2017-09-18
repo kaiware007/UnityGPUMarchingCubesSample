@@ -24,10 +24,12 @@ public class GPUMarchingCubesDrawMesh : MonoBehaviour {
     #endregion
 
     #region private
-    int vertexMax = 0;
-    Mesh[] meshs = null;
-    Material[] materials = null;
-    float renderScale = 1f / 32f;
+    int vertexMax = 0;                          // 頂点数
+    Mesh[] meshs = null;                        // Mesh配列
+    Material[] materials = null;                // Meshごとのマテリアル配列
+    float renderScale = 1f / 32f;               // 表示スケール
+
+    MarchingCubesDefines mcDefines = null;
     #endregion
 
     void Initialize()
@@ -36,9 +38,12 @@ public class GPUMarchingCubesDrawMesh : MonoBehaviour {
         
         Debug.Log("VertexMax " + vertexMax);
 
+        // 1Cubeの大きさをsegmentNumで分割してレンダリング時の大きさを決める
         renderScale = 1f / segmentNum;
 
         CreateMesh();
+
+        mcDefines = new MarchingCubesDefines();
     }
 
     void CreateMesh()
@@ -52,7 +57,10 @@ public class GPUMarchingCubesDrawMesh : MonoBehaviour {
         materials = new Material[meshNum];
 
         // Meshのバウンズ計算
-        Bounds bounds = new Bounds(transform.position, new Vector3(segmentNum, segmentNum, segmentNum) * renderScale);
+        Bounds bounds = new Bounds(
+            transform.position, 
+            new Vector3(segmentNum, segmentNum, segmentNum) * renderScale
+        );
 
         int id = 0;
         for (int i = 0; i < meshNum; i++)
@@ -82,11 +90,15 @@ public class GPUMarchingCubesDrawMesh : MonoBehaviour {
 
     void RenderMesh()
     {
+        // 描画するサイズ、位置、姿勢を事前に計算する
         Vector3 halfSize = new Vector3(segmentNum, segmentNum, segmentNum) * renderScale * 0.5f;
         Matrix4x4 trs = Matrix4x4.TRS(transform.position, transform.rotation, transform.localScale);
+
         for (int i = 0; i < meshs.Length; i++)
         {
-            materials[i].SetPass(0);
+            materials[i].SetPass(0);    // 描画するパスをセット
+
+            // 各種変数を渡す
             materials[i].SetInt("_SegmentNum", segmentNum);
             materials[i].SetFloat("_Scale", renderScale);
             materials[i].SetFloat("_Threashold", threashold);
@@ -98,17 +110,36 @@ public class GPUMarchingCubesDrawMesh : MonoBehaviour {
             materials[i].SetColor("_DiffuseColor", DiffuseColor);
             materials[i].SetColor("_EmissionColor", EmissionColor);
             materials[i].SetMatrix("_Matrix", trs);
+
+            materials[i].SetBuffer("vertexOffset", mcDefines.vertexOffsetBuffer);
+            materials[i].SetBuffer("cubeEdgeFlags", mcDefines.cubeEdgeFlagsBuffer);
+            materials[i].SetBuffer("edgeConnection", mcDefines.edgeConnectionBuffer);
+            materials[i].SetBuffer("edgeDirection", mcDefines.edgeDirectionBuffer);
+            materials[i].SetBuffer("triangleConnectionTable", mcDefines.triangleConnectionTableBuffer);
+
             Graphics.DrawMesh(meshs[i], Matrix4x4.identity, materials[i], 0);
         }
     }
 
     // Use this for initialization
-    void Start () {
+    void Start ()
+    {
         Initialize();
     }
 
     void Update()
     {
         RenderMesh();
+    }
+
+    void OnDestroy()
+    {
+        mcDefines.ReleaseBuffer();
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(transform.position, transform.localScale);
     }
 }
